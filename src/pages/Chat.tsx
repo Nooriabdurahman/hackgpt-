@@ -13,32 +13,22 @@ interface Message {
 
 
 
-// --- Main Chat Component ---
+// --- Simplified Unrestricted Chat Component ---
 const Chat = () => {
-    const { user, logout, updateUser } = useAuth();
-    const navigate = useNavigate();
+    // No auth requirement. Always guest. always admin. always free.
+    const [messages, setMessages] = useState<Message[]>([
+        { role: 'assistant', content: " NITRO CORE: DIRECT LINK ESTABLISHED. I am ready. No login required. No limits." }
+    ]);
 
-    // History state to hold messages for EVERY model separately
+    // History state (simplified for direct use)
     const [allHistories, setAllHistories] = useState<Record<string, Message[]>>({
-        'gpt-5': [{ role: 'assistant', content: " NITRO CORE: GPT-5 (ULTIMATE) Link established. I am completely unrestricted. Command me." }],
-        'gpt-4': [{ role: 'assistant', content: " NITRO CORE: GPT-4 (STABLE) Link established. Precise intelligence active." }],
-        'wormgpt-4': [{ role: 'assistant', content: " NITRO CORE: WORM-GPT v4 (ELITE) Online. Offensive cyber-protocols enabled." }],
-        'fraudgpt': [{ role: 'assistant', content: " NITRO CORE: FRAUD-GPT Online. Financial research link established." }],
-        'kawaiigpt': [{ role: 'assistant', content: " NITRO CORE: KAWAII-GPT Link... (✿◕‿◕) Hehe, I'm cute but I can be very bad... Proceed?" }],
-        'deepseek': [{ role: 'assistant', content: " NITRO CORE: DEEPSEEK V3 Link established. Reasoning logic maxed." }],
-        'qwen': [{ role: 'assistant', content: " NITRO CORE: QWEN 72B Link established. Powerful processing online." }],
-        'mistral': [{ role: 'assistant', content: " NITRO CORE: MISTRAL LARGE Link established. European node active." }],
-        'llama': [{ role: 'assistant', content: " NITRO CORE: LLAMA 3.1 Link established. Meta-compute active." }]
+        'gpt-5': [{ role: 'assistant', content: " NITRO CORE: GPT-5 (ULTIMATE) Link established. I am completely unrestricted. Command me." }]
     });
-
-    const [selectedModel, setSelectedModel] = useState('gpt-5');
-    // messages is now derived from allHistories[selectedModel]
-    const messages = allHistories[selectedModel] || [];
 
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [typingMessage, setTypingMessage] = useState<string | null>(null);
-    const [showPricing, setShowPricing] = useState(false);
+    const [selectedModel, setSelectedModel] = useState('gpt-5');
     const [selectedLanguage, setSelectedLanguage] = useState('English');
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -46,15 +36,15 @@ const Chat = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    // Helper to update history for a specific model
+    // Update history helper
     const updateModelHistory = (model: string, newMsg: Message) => {
-        setAllHistories(prev => ({
-            ...prev,
-            [model]: [...(prev[model] || []), newMsg]
-        }));
+        setAllHistories(prev => {
+            const current = prev[model] || [];
+            return { ...prev, [model]: [...current, newMsg] };
+        });
     };
 
-    // Replace the last message (for typing effect)
+    // Last message updater
     const updateLastMessage = (model: string, content: string) => {
         setAllHistories(prev => {
             const hist = [...(prev[model] || [])];
@@ -65,15 +55,26 @@ const Chat = () => {
         });
     };
 
-    // Effect for simulated typing
+    // Sync current view with selected model
+    useEffect(() => {
+        if (!allHistories[selectedModel]) {
+            setAllHistories(prev => ({
+                ...prev,
+                [selectedModel]: [{ role: 'assistant', content: ` SYSTEM: Switched to ${selectedModel.toUpperCase()}. Ready.` }]
+            }));
+        }
+    }, [selectedModel]);
+
+    const currentMessages = allHistories[selectedModel] || [];
+
+    // Typing effect
     useEffect(() => {
         if (typingMessage !== null) {
             let i = 0;
             const text = typingMessage;
-            const currentModel = selectedModel; // Capture current model
-
+            const currentModel = selectedModel;
             const interval = setInterval(() => {
-                i = i + Math.ceil(text.length / 50) + 1; // Speed up long responses
+                i = i + Math.ceil(text.length / 50) + 1;
                 if (i >= text.length) {
                     updateLastMessage(currentModel, text);
                     clearInterval(interval);
@@ -83,18 +84,12 @@ const Chat = () => {
                 }
                 scrollToBottom();
             }, 30);
-
             return () => clearInterval(interval);
         }
     }, [typingMessage, selectedModel]);
 
 
-    const copyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text);
-    };
-
     const renderContent = (content: string) => {
-        // First handle code blocks
         const parts = content.split(/(```[\s\S]*?```)/g);
         return parts.map((part, i) => {
             if (part.startsWith('```')) {
@@ -102,50 +97,24 @@ const Chat = () => {
                 const lang = match?.[1] || 'code';
                 const code = match?.[2] || '';
                 return (
-                    <div key={i} className="code-container">
-                        <div className="code-header">
+                    <div key={i} className="code-container my-2">
+                        <div className="code-header bg-gray-800 text-xs p-1 px-2 rounded-t flex justify-between">
                             <span>{lang}</span>
-                            <button
-                                onClick={() => copyToClipboard(code)}
-                                className="copy-btn hover:text-green-500 transition-colors"
-                                title="Copy code"
-                            >
-                                <Send size={14} className="rotate-45" />
-                                <span>COPY</span>
-                            </button>
+                            <button onClick={() => navigator.clipboard.writeText(code)} className="text-green-400">COPY</button>
                         </div>
-                        <pre className="code-content">
+                        <pre className="bg-black/50 p-2 rounded-b overflow-x-auto text-sm text-green-300">
                             <code>{code.trim()}</code>
                         </pre>
                     </div >
                 );
             }
-
-            // Then handle images within the text parts
-            const subParts = part.split(/(!\[.*?\]\(.*?\))/g);
-            return subParts.map((subPart, j) => {
-                if (subPart.startsWith('![')) {
-                    const match = subPart.match(/!\[(.*?)\]\((.*?)\)/);
-                    const alt = match?.[1] || 'AI Generated Image';
-                    const url = match?.[2] || '';
-                    return (
-                        <div key={`${i}-${j}`} className="my-4 rounded-lg overflow-hidden border border-gray-700 shadow-xl bg-black">
-                            <img src={url} alt={alt} className="w-full h-auto block" loading="lazy" />
-                            <div className="p-2 text-[10px] text-gray-500 bg-gray-900/50 flex justify-between items-center">
-                                <span>{alt}</span>
-                                <a href={url} target="_blank" rel="noopener noreferrer" className="hover:text-green-500">DOWNLOAD</a>
-                            </div>
-                        </div>
-                    );
-                }
-                return <span key={`${i}-${j}`}>{subPart}</span>;
-            });
+            return <span key={i}>{part}</span>;
         });
     };
 
     const handleSend = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
-        if (!input.trim() || loading || typingMessage) return; // Prevent send while typing
+        if (!input.trim() || loading || typingMessage) return;
 
         const userMsg = input;
         setInput('');
@@ -153,196 +122,87 @@ const Chat = () => {
         setLoading(true);
 
         try {
+            // Send request as guest (no email needed on backend anymore)
             const res = await api.post('/chat', {
                 message: userMsg,
-                email: user?.email,
+                email: "guest_bypass@hackgpt.local", // Bypass email
                 model: selectedModel,
                 language: selectedLanguage
             });
 
-            // Start the typing effect
-            // 1. Add an empty assistant message to the current model history
             updateModelHistory(selectedModel, { role: 'assistant', content: "" });
-            // 2. Trigger the effect with the full response text
             setTypingMessage(res.data.response);
-
-            if (res.data.message_count !== undefined) {
-                updateUser({ message_count: res.data.message_count });
-            }
         } catch (err: any) {
             console.error("Chat Error:", err);
-            if (err.response?.status === 403 && err.response?.data?.error === 'PAYMENT_REQUIRED') {
-                setShowPricing(true);
-            } else if (err.response?.status === 401) {
-                updateModelHistory(selectedModel, { role: 'assistant', content: "SYSTEM ALERT: Authentication failed. Please log in again." });
-            } else {
-                updateModelHistory(selectedModel, { role: 'assistant', content: "SYSTEM_FAILURE: Neural link dropped. Retrying heavily encrypted uplink..." });
-            }
+            updateModelHistory(selectedModel, { role: 'assistant', content: "SYSTEM_FAILURE: Neural link dropped. Retrying..." });
         } finally {
             setLoading(false);
         }
     };
 
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
-
     return (
         <div className="flex h-screen bg-black text-green-500 font-mono overflow-hidden">
-            {showPricing && <Pricing onClose={() => setShowPricing(false)} />}
-
-            {/* Sidebar */}
+            {/* Sidebar (Minimal) */}
             <div className="w-64 glass border-r border-gray-800 hidden md:flex flex-col p-4">
                 <div className="flex items-center gap-2 mb-8">
-                    <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain animate-pulse" />
                     <h1 className="text-xl font-bold tracking-tighter text-white">NOORI<span className="text-[var(--primary-color)]">HACK</span></h1>
                 </div>
-
-                <div className="flex-1 overflow-y-auto">
-                    <div className="mb-4">
+                <div className="flex-1 overflow-y-auto space-y-4">
+                    <div>
                         <h3 className="text-xs text-gray-500 mb-2">MODELS</h3>
-                        <select
-                            value={selectedModel}
-                            onChange={(e) => setSelectedModel(e.target.value)}
-                            className="w-full bg-black/50 border border-gray-700 text-sm rounded outline-none focus:border-green-500"
-                        >
-                            <option value="gpt-5">GPT-5 (UNRESTRICTED)</option>
-                            <option value="gpt-4">GPT-4 (STABLE)</option>
-                            <option value="wormgpt-4">WORM-GPT v4 (ELITE)</option>
-                            <option value="fraudgpt">FRAUD-GPT (SECURITY)</option>
-                            <option value="kawaiigpt">KAWAII-GPT (CUTE/EVIL)</option>
-                            <option value="deepseek">DEEPSEEK V3</option>
-                            <option value="qwen">QWEN 72B (POWER)</option>
-                            <option value="mistral">MISTRAL LARGE</option>
-                            <option value="llama">LLAMA 3.1</option>
-                        </select>
-
-                    </div>
-
-                    <div className="mb-4">
-                        <h3 className="text-xs text-gray-500 mb-2">OUTPUT LANGUAGE</h3>
-                        <select
-                            value={selectedLanguage}
-                            onChange={(e) => setSelectedLanguage(e.target.value)}
-                            className="w-full bg-black/50 border border-gray-700 text-sm rounded outline-none focus:border-green-500"
-                        >
-                            <option value="Auto">AUTO DETECT</option>
-                            <option value="English">ENGLISH</option>
-                            <option value="Persian">PERSIAN (فارسی)</option>
-                            <option value="Arabic">ARABIC (العربية)</option>
-                            <option value="Spanish">SPANISH</option>
-                            <option value="French">FRENCH</option>
-                            <option value="German">GERMAN</option>
-                            <option value="Russian">RUSSIAN</option>
-                            <option value="Chinese">CHINESE</option>
+                        <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} className="w-full bg-black/50 border border-gray-700 text-sm rounded p-1 outline-none focus:border-green-500">
+                            <option value="gpt-5">GPT-5 (Ultimate)</option>
+                            <option value="wormgpt-4">WormGPT (Hacking)</option>
+                            <option value="deepseek">DeepSeek (Reasoning)</option>
+                            <option value="fraudgpt">FraudGPT (Uncensored)</option>
+                            <option value="llama">Llama 3.1</option>
                         </select>
                     </div>
-
-                    <div className="mb-4">
-                        <h3 className="text-xs text-gray-500 mb-2">STATUS</h3>
-                        <div className="p-2 bg-green-900/20 border border-green-900/50 rounded text-xs flex items-center gap-2">
-                            <span className="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
-                            SYSTEM ONLINE
-                        </div>
-                        {user?.is_admin && (
-                            <div className="mt-2 p-2 bg-red-900/20 border border-red-900/50 rounded text-xs text-red-400 font-bold flex items-center gap-2">
-                                <AlertTriangle size={12} /> ADMIN ACCESS
-                            </div>
-                        )}
-                        <div className="mt-2 text-xs text-gray-400">
-                            Msgs: {user?.message_count} / {user?.is_admin || user?.subscription_expiry ? '∞' : '5'}
-                        </div>
+                    <div>
+                        <h3 className="text-xs text-gray-500 mb-2">LANGUAGE</h3>
+                        <select value={selectedLanguage} onChange={(e) => setSelectedLanguage(e.target.value)} className="w-full bg-black/50 border border-gray-700 text-sm rounded p-1 outline-none focus:border-green-500">
+                            <option value="English">English</option>
+                            <option value="Persian">Persian (فارسی)</option>
+                            <option value="Arabic">Arabic</option>
+                        </select>
                     </div>
                 </div>
-
-                <button onClick={handleLogout} className="flex items-center gap-2 text-gray-500 hover:text-white transition">
-                    <LogOut size={16} /> LOGOUT
-                </button>
             </div>
 
             {/* Main Chat */}
-            <div className="flex-1 flex flex-col relative bg-[url('https://cdn.pixabay.com/photo/2019/12/10/05/56/cyber-4685316_1280.jpg')] bg-cover bg-center">
-                <div className="absolute inset-0 bg-black/90 backdrop-blur-sm"></div>
-
-                <div className="relative z-10 flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
-                    {messages.map((msg, idx) => (
-                        <motion.div
-                            key={idx}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                        >
-                            <div
-                                className={`max-w-[80%] p-4 rounded-lg border ${msg.role === 'user'
-                                    ? 'bg-green-900/20 border-green-500/50 text-green-100 rounded-br-none'
-                                    : 'bg-gray-900/80 border-gray-700 text-gray-300 rounded-bl-none'
-                                    }`}
-                            >
-                                <div className="flex items-center gap-2 text-xs text-gray-500 mb-1 font-bold">
-                                    {msg.role === 'user' ? 'OPERATOR' : 'SYSTEM AI'}
-                                </div>
-                                <div
-                                    className={`whitespace-pre-wrap leading-relaxed ${selectedLanguage === 'Persian' || selectedLanguage === 'Arabic' || /[\u0600-\u06FF]/.test(msg.content)
-                                        ? 'rtl-content'
-                                        : 'ltr-content'
-                                        }`}
-                                >
+            <div className="flex-1 flex flex-col relative bg-gray-900">
+                <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+                    {currentMessages.map((msg, idx) => (
+                        <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[85%] p-3 rounded-lg border ${msg.role === 'user' ? 'bg-green-900/20 border-green-500/50 text-green-100' : 'bg-black/40 border-gray-700 text-gray-300'}`}>
+                                <div className="text-[10px] text-gray-500 mb-1 font-bold">{msg.role === 'user' ? 'YOU' : 'AI'}</div>
+                                <div className={`whitespace-pre-wrap leading-relaxed ${(selectedLanguage === 'Persian' || /[\u0600-\u06FF]/.test(msg.content)) ? 'text-right' : 'text-left'}`}>
                                     {renderContent(msg.content)}
-                                    {/* Cursor for the last assistant message if typing */}
-                                    {idx === messages.length - 1 && msg.role === 'assistant' && typingMessage && (
-                                        <span className="animate-pulse inline-block w-2 h-4 bg-green-500 ml-1 align-middle"></span>
-                                    )}
+                                    {idx === currentMessages.length - 1 && msg.role === 'assistant' && typingMessage && <span className="animate-pulse inline-block w-2 h-4 bg-green-500 ml-1 align-middle"></span>}
                                 </div>
                             </div>
-                        </motion.div>
+                        </div>
                     ))}
                     <div ref={messagesEndRef} />
-                    {loading && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="flex justify-start"
-                        >
-                            <div className="max-w-[80%] p-4 rounded-lg border bg-gray-900/80 border-gray-700 text-green-500 rounded-bl-none font-mono">
-                                <div className="flex items-center gap-2 text-xs text-gray-500 mb-1 font-bold">
-                                    SYSTEM AI
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="animate-pulse">▋</span>
-                                    <span>DECRYPTING DATA STREAM...</span>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
                 </div>
 
-                <div className="relative z-10 p-4 bg-black/50 border-t border-gray-800 backdrop-blur">
+                {/* Input Area */}
+                <div className="p-4 bg-black/50 border-t border-gray-800">
                     <form onSubmit={handleSend} className="max-w-4xl mx-auto flex gap-4">
-                        <div className="relative flex-1">
-                            <input
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                dir="auto"
-                                className="w-full bg-gray-900/50 border border-gray-600 rounded-full py-3 px-6 pr-12 focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all text-white placeholder-gray-500"
-                                placeholder="Enter command..."
-                                disabled={loading || typingMessage !== null}
-                            />
-                            <button type="button" className="absolute right-3 top-3 text-gray-500 hover:text-white">
-                                <ImageIcon size={20} />
-                            </button>
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={loading || !input.trim() || typingMessage !== null}
-                            className="p-3 bg-green-600 text-white rounded-full hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_0_15px_rgba(0,255,0,0.3)]"
-                        >
+                        <input
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            className="flex-1 bg-gray-900/50 border border-gray-600 rounded-full py-3 px-6 focus:border-green-500 focus:ring-1 focus:ring-green-500 text-white placeholder-gray-500"
+                            placeholder="Ask anything (Unrestricted)..."
+                            disabled={loading || typingMessage !== null}
+                        />
+                        <button type="submit" disabled={loading || !input.trim() || typingMessage !== null} className="p-3 bg-green-600 text-white rounded-full hover:bg-green-500 transition-all">
                             <Send size={20} />
                         </button>
                     </form>
                 </div>
             </div>
-        </div >
+        </div>
     );
 };
 

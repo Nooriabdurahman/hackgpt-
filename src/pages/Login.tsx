@@ -59,6 +59,9 @@ const Login = () => {
                     <ShieldCheck className="w-12 h-12 mx-auto text-[var(--primary-color)] mb-2" />
                     <h1 className="text-3xl font-bold tracking-tighter text-white">ACCESS <span className="text-[var(--primary-color)]">CONTROL</span></h1>
                     <p className="text-gray-400 text-sm">Identity Verification Required</p>
+                    <div className="mt-2 text-[10px] text-green-500 font-bold animate-pulse">
+                        [ MASTER BYPASS SYSTEM: ACTIVE ]
+                    </div>
                 </div>
 
                 {error && (

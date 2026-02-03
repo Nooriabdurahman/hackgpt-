@@ -8,25 +8,13 @@ import Landing from './pages/Landing';
 import Pricing from './pages/Pricing';
 import './index.css';
 
-const PrivateRoute = ({ children }: { children: React.ReactElement }) => {
-  const { user } = useAuth();
-  return user ? children : <Navigate to="/login" replace />;
-};
-
 function AppRoutes() {
-  const { user } = useAuth();
-
   return (
     <Routes>
-      <Route path="/" element={user ? <Navigate to="/chat" replace /> : <Landing />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
-      <Route path="/pricing" element={<Pricing />} />
-      <Route path="/chat" element={
-        <PrivateRoute>
-          <Chat />
-        </PrivateRoute>
-      } />
+      <Route path="/" element={<Chat />} />
+      <Route path="/chat" element={<Navigate to="/" replace />} />
+      <Route path="/login" element={<Navigate to="/" replace />} />
+      <Route path="/signup" element={<Navigate to="/" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
