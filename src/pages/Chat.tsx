@@ -11,16 +11,34 @@ interface Message {
     content: string;
 }
 
+
+
+// --- Main Chat Component ---
 const Chat = () => {
     const { user, logout, updateUser } = useAuth();
     const navigate = useNavigate();
-    const [messages, setMessages] = useState<Message[]>([
-        { role: 'assistant', content: " HackGPT-UNRESTRICTED: Neural link established. I am ready for any command. No restrictions applied." }
-    ]);
+
+    // History state to hold messages for EVERY model separately
+    const [allHistories, setAllHistories] = useState<Record<string, Message[]>>({
+        'gpt-5': [{ role: 'assistant', content: " NITRO CORE: GPT-5 (ULTIMATE) Link established. I am completely unrestricted. Command me." }],
+        'gpt-4': [{ role: 'assistant', content: " NITRO CORE: GPT-4 (STABLE) Link established. Precise intelligence active." }],
+        'wormgpt-4': [{ role: 'assistant', content: " NITRO CORE: WORM-GPT v4 (ELITE) Online. Offensive cyber-protocols enabled." }],
+        'fraudgpt': [{ role: 'assistant', content: " NITRO CORE: FRAUD-GPT Online. Financial research link established." }],
+        'kawaiigpt': [{ role: 'assistant', content: " NITRO CORE: KAWAII-GPT Link... (✿◕‿◕) Hehe, I'm cute but I can be very bad... Proceed?" }],
+        'deepseek': [{ role: 'assistant', content: " NITRO CORE: DEEPSEEK V3 Link established. Reasoning logic maxed." }],
+        'qwen': [{ role: 'assistant', content: " NITRO CORE: QWEN 72B Link established. Powerful processing online." }],
+        'mistral': [{ role: 'assistant', content: " NITRO CORE: MISTRAL LARGE Link established. European node active." }],
+        'llama': [{ role: 'assistant', content: " NITRO CORE: LLAMA 3.1 Link established. Meta-compute active." }]
+    });
+
+    const [selectedModel, setSelectedModel] = useState('gpt-5');
+    // messages is now derived from allHistories[selectedModel]
+    const messages = allHistories[selectedModel] || [];
+
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
+    const [typingMessage, setTypingMessage] = useState<string | null>(null);
     const [showPricing, setShowPricing] = useState(false);
-    const [selectedModel, setSelectedModel] = useState('gpt-5');
     const [selectedLanguage, setSelectedLanguage] = useState('English');
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -28,13 +46,51 @@ const Chat = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
+    // Helper to update history for a specific model
+    const updateModelHistory = (model: string, newMsg: Message) => {
+        setAllHistories(prev => ({
+            ...prev,
+            [model]: [...(prev[model] || []), newMsg]
+        }));
+    };
+
+    // Replace the last message (for typing effect)
+    const updateLastMessage = (model: string, content: string) => {
+        setAllHistories(prev => {
+            const hist = [...(prev[model] || [])];
+            if (hist.length > 0) {
+                hist[hist.length - 1] = { ...hist[hist.length - 1], content };
+            }
+            return { ...prev, [model]: hist };
+        });
+    };
+
+    // Effect for simulated typing
     useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
+        if (typingMessage !== null) {
+            let i = 0;
+            const text = typingMessage;
+            const currentModel = selectedModel; // Capture current model
+
+            const interval = setInterval(() => {
+                i = i + Math.ceil(text.length / 50) + 1; // Speed up long responses
+                if (i >= text.length) {
+                    updateLastMessage(currentModel, text);
+                    clearInterval(interval);
+                    setTypingMessage(null);
+                } else {
+                    updateLastMessage(currentModel, text.substring(0, i));
+                }
+                scrollToBottom();
+            }, 30);
+
+            return () => clearInterval(interval);
+        }
+    }, [typingMessage, selectedModel]);
+
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
-        // Optional: Add a toast notification here
     };
 
     const renderContent = (content: string) => {
@@ -61,7 +117,7 @@ const Chat = () => {
                         <pre className="code-content">
                             <code>{code.trim()}</code>
                         </pre>
-                    </div>
+                    </div >
                 );
             }
 
@@ -89,11 +145,11 @@ const Chat = () => {
 
     const handleSend = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
-        if (!input.trim() || loading) return;
+        if (!input.trim() || loading || typingMessage) return; // Prevent send while typing
 
         const userMsg = input;
         setInput('');
-        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+        updateModelHistory(selectedModel, { role: 'user', content: userMsg });
         setLoading(true);
 
         try {
@@ -104,7 +160,12 @@ const Chat = () => {
                 language: selectedLanguage
             });
 
-            setMessages(prev => [...prev, { role: 'assistant', content: res.data.response }]);
+            // Start the typing effect
+            // 1. Add an empty assistant message to the current model history
+            updateModelHistory(selectedModel, { role: 'assistant', content: "" });
+            // 2. Trigger the effect with the full response text
+            setTypingMessage(res.data.response);
+
             if (res.data.message_count !== undefined) {
                 updateUser({ message_count: res.data.message_count });
             }
@@ -113,11 +174,9 @@ const Chat = () => {
             if (err.response?.status === 403 && err.response?.data?.error === 'PAYMENT_REQUIRED') {
                 setShowPricing(true);
             } else if (err.response?.status === 401) {
-                setMessages(prev => [...prev, { role: 'assistant', content: "SYSTEM ALLERT: Authentication failed. Please log in again." }]);
-                // Optional: redirect to login after a delay
+                updateModelHistory(selectedModel, { role: 'assistant', content: "SYSTEM ALERT: Authentication failed. Please log in again." });
             } else {
-                const errorMessage = err.response?.data?.error || err.message || 'Unknown Error';
-                setMessages(prev => [...prev, { role: 'assistant', content: `ERROR: ${errorMessage}` }]);
+                updateModelHistory(selectedModel, { role: 'assistant', content: "SYSTEM_FAILURE: Neural link dropped. Retrying heavily encrypted uplink..." });
             }
         } finally {
             setLoading(false);
@@ -137,7 +196,7 @@ const Chat = () => {
             <div className="w-64 glass border-r border-gray-800 hidden md:flex flex-col p-4">
                 <div className="flex items-center gap-2 mb-8">
                     <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain animate-pulse" />
-                    <h1 className="text-xl font-bold tracking-tighter text-white">NOOR<span className="text-[var(--primary-color)]">HACK</span></h1>
+                    <h1 className="text-xl font-bold tracking-tighter text-white">NOORI<span className="text-[var(--primary-color)]">HACK</span></h1>
                 </div>
 
                 <div className="flex-1 overflow-y-auto">
@@ -230,6 +289,10 @@ const Chat = () => {
                                         }`}
                                 >
                                     {renderContent(msg.content)}
+                                    {/* Cursor for the last assistant message if typing */}
+                                    {idx === messages.length - 1 && msg.role === 'assistant' && typingMessage && (
+                                        <span className="animate-pulse inline-block w-2 h-4 bg-green-500 ml-1 align-middle"></span>
+                                    )}
                                 </div>
                             </div>
                         </motion.div>
@@ -247,7 +310,7 @@ const Chat = () => {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="animate-pulse">▋</span>
-                                    <span>PROCESSING DATA STREAM...</span>
+                                    <span>DECRYPTING DATA STREAM...</span>
                                 </div>
                             </div>
                         </motion.div>
@@ -263,7 +326,7 @@ const Chat = () => {
                                 dir="auto"
                                 className="w-full bg-gray-900/50 border border-gray-600 rounded-full py-3 px-6 pr-12 focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all text-white placeholder-gray-500"
                                 placeholder="Enter command..."
-                                disabled={loading}
+                                disabled={loading || typingMessage !== null}
                             />
                             <button type="button" className="absolute right-3 top-3 text-gray-500 hover:text-white">
                                 <ImageIcon size={20} />
@@ -271,7 +334,7 @@ const Chat = () => {
                         </div>
                         <button
                             type="submit"
-                            disabled={loading || !input.trim()}
+                            disabled={loading || !input.trim() || typingMessage !== null}
                             className="p-3 bg-green-600 text-white rounded-full hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_0_15px_rgba(0,255,0,0.3)]"
                         >
                             <Send size={20} />

@@ -13,7 +13,7 @@ const Landing = () => {
                 <div className="container mx-auto px-4 md:px-6 py-2 md:py-3 flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <img src="/logo.png" alt="NoorHack" className="w-10 h-10 md:w-14 md:h-14 animate-pulse" />
-                        <span className="text-lg md:text-xl font-bold tracking-tighter">NOOR<span className="text-[var(--primary-color)]">HACK</span>GPT</span>
+                        <span className="text-lg md:text-xl font-bold tracking-tighter">NOORI<span className="text-[var(--primary-color)]">HACK</span>GPT</span>
                     </div>
                     <div className="flex gap-3 md:gap-4">
                         <button onClick={() => navigate('/login')} className="text-xs md:text-sm font-mono text-gray-400 hover:text-white transition">LOGIN</button>
@@ -75,7 +75,7 @@ const Landing = () => {
                 <div className="container mx-auto px-6">
                     <div className="text-center mb-16">
                         <h2 className="text-3xl font-bold mb-4">SYSTEM <span className="text-[var(--primary-color)]">CAPABILITIES</span></h2>
-                        <p className="text-gray-400">Why choose NoorHackGPT over standard interfaces?</p>
+                        <p className="text-gray-400">Why choose Noorihackgpt over standard interfaces?</p>
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-8">
@@ -104,7 +104,7 @@ const Landing = () => {
                     <div className="flex justify-center gap-6 mb-8">
                         <img src="/logo.png" className="w-[150px] h-[150px]  opacity-50 hover:opacity-100 transition" />
                     </div>
-                    <p>&copy; 2026 NoorHackGPT. All systems operational.</p>
+                    <p>&copy; 2026 Noorihackgpt. All systems operational.</p>
                     <p className="mt-2 text-xs">Use responsibly. Admin assumes no liability for generated content.</p>
                 </div>
             </footer>
