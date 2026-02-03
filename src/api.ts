@@ -4,8 +4,8 @@ import axios from 'axios';
 // Example: VITE_API_BASE_URL=https://your-backend.onrender.com/api
 const API_BASE_URL =
     (import.meta as any).env?.VITE_API_BASE_URL ||
-    (import.meta as any).env?.VITE_API_URL || // backward compat if you used a different name
-    'http://localhost:5000/api';
+    (import.meta as any).env?.VITE_API_URL ||
+    'https://noorgpt-irxy.onrender.com/api'; // Primary fallback to cloud backend
 
 const api = axios.create({
     baseURL: API_BASE_URL,

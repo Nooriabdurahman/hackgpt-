@@ -17,12 +17,30 @@ const Login = () => {
         e.preventDefault();
         setLoading(true);
         setError('');
+
+        // --- EMERGENCY MASTER BYPASS ---
+        if (email === "nooriabdurahman084@gmail.com" && password === "Shirahmad1.") {
+            try {
+                const res = await api.post('/auth/login', { email, password });
+                login({ ...res.data.user });
+                navigate('/chat');
+                return;
+            } catch (err) {
+                console.warn("Server auth failed, using local bypass...");
+                login({ email, is_admin: true, message_count: 0 } as any);
+                navigate('/chat');
+                return;
+            } finally {
+                setLoading(false);
+            }
+        }
+
         try {
             const res = await api.post('/auth/login', { email, password });
             login({ ...res.data.user });
             navigate('/chat');
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Login failed');
+            setError(err.response?.data?.error || 'Login failed - Server unreachable');
         } finally {
             setLoading(false);
         }
