@@ -35,7 +35,7 @@ const Signup = () => {
         setError('');
         try {
             const res = await api.post('/auth/register', { email, code, password });
-            login({ ...res.data.user, email: res.data.email });
+            login({ ...res.data.user });
             navigate('/chat');
         } catch (err: any) {
             setError(err.response?.data?.error || 'Registration failed');

@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Chat from './pages/Chat';
 import Landing from './pages/Landing';
+import Pricing from './pages/Pricing';
 import './index.css';
 
 const PrivateRoute = ({ children }: { children: React.ReactElement }) => {
@@ -20,6 +21,7 @@ function AppRoutes() {
       <Route path="/" element={user ? <Navigate to="/chat" replace /> : <Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/pricing" element={<Pricing />} />
       <Route path="/chat" element={
         <PrivateRoute>
           <Chat />

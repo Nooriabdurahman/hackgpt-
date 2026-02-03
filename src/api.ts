@@ -1,14 +1,14 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: 'http://localhost:5000/api',
+    baseURL: 'https://noorgpt-irxy.onrender.com/api',
     headers: {
         'Content-Type': 'application/json',
     },
 });
 
 export const chatApi = axios.create({
-    baseURL: 'http://localhost:5000',
+    baseURL: 'https://noorgpt-irxy.onrender.com',
     headers: {
         'Content-Type': 'application/json',
     },

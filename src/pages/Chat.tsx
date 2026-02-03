@@ -148,7 +148,7 @@ const Chat = () => {
                             onChange={(e) => setSelectedModel(e.target.value)}
                             className="w-full bg-black/50 border border-gray-700 text-sm rounded outline-none focus:border-green-500"
                         >
-                            <option value="openai">GPT-5 (UNRESTRICTED)</option>
+                            <option value="gpt-5">GPT-5 (UNRESTRICTED)</option>
                             <option value="gpt-4">GPT-4 (STABLE)</option>
                             <option value="wormgpt-4">WORM-GPT v4 (ELITE)</option>
                             <option value="fraudgpt">FRAUD-GPT (SECURITY)</option>
@@ -192,7 +192,7 @@ const Chat = () => {
                             </div>
                         )}
                         <div className="mt-2 text-xs text-gray-400">
-                            Msgs: {user?.message_count} / {user?.is_admin || user?.subscription_expiry ? '∞' : '6'}
+                            Msgs: {user?.message_count} / {user?.is_admin || user?.subscription_expiry ? '∞' : '5'}
                         </div>
                     </div>
                 </div>
