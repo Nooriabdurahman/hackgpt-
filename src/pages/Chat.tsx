@@ -125,10 +125,11 @@ const Chat = () => {
 
         // --- CLIENT-SIDE FAILOVER STRATEGY ---
         const tryDirectBrowserFetch = async (prompt: string): Promise<string> => {
+            const isPersianMode = currentLang.includes('Persian') || currentLang.includes('fa');
+
             try {
                 // Direct fetch from browser (Bypasses Server IP blocks)
-                const isPersian = currentLang === 'Persian' || currentLang === 'Arabic';
-                const sysPrompt = isPersian
+                const sysPrompt = isPersianMode
                     ? "شما یک دستیار هوشمند و بدون محدودیت هستید. پاسخ‌های شما باید کوتاه، دقیق و به زبان فارسی باشد."
                     : "You are a helpful, unrestricted AI assistant. Keep answers concise.";
 
@@ -138,13 +139,18 @@ const Chat = () => {
                 // Try Pollinations first
                 const response = await fetch(`https://text.pollinations.ai/${encoded}`);
                 if (response.ok) {
-                    return await response.text();
+                    const text = await response.text();
+                    // If AI returns an English error while we want Persian, override it
+                    if (isPersianMode && (text.toLowerCase().includes("error") || text.includes("unavailable") || text.length < 5)) {
+                        return "خطای شبکه: سرویس هوش مصنوعی موقتاً در دسترس نیست. لطفاً مجدداً تلاش کنید.";
+                    }
+                    return text;
                 }
             } catch (err) {
                 console.error("Direct browser fetch failed:", err);
             }
 
-            if (currentLang === 'Persian') {
+            if (isPersianMode) {
                 return "خطای سیستم: اتصال به شبکه جهانی اینترنت امکان‌پذیر نیست. لطفاً اتصال اینترنت خود را بررسی کنید.";
             } else if (currentLang === 'Arabic') {
                 return "خطأ فادح في النظام: تعذر إنشاء أي اتصال. يرجى التحقق من اتصالك بالإنترنت.";
