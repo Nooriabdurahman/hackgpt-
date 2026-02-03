@@ -183,6 +183,21 @@ const Chat = () => {
                             </div>
                         </div>
                     ))}
+                    {loading && (
+                        <div className="flex justify-start">
+                            <div className="max-w-[85%] p-4 rounded-lg border bg-black/40 border-green-500/20 text-green-400 rounded-bl-none font-mono">
+                                <div className="flex items-center gap-2 text-xs text-gray-500 mb-1 font-bold">AI PROCESSING</div>
+                                <div className="flex items-center gap-3">
+                                    <div className="flex space-x-1">
+                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce"></div>
+                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                                    </div>
+                                    <span className="animate-pulse">GENERATING RESPONSE...</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     <div ref={messagesEndRef} />
                 </div>
 
