@@ -119,22 +119,49 @@ const Chat = () => {
         const userMsg = input;
         setInput('');
         updateModelHistory(selectedModel, { role: 'user', content: userMsg });
-        setLoading(true);
+        setLoading(true); // Start animation
+
+        // --- CLIENT-SIDE FAILOVER STRATEGY ---
+        const tryDirectBrowserFetch = async (prompt: string): Promise<string> => {
+            try {
+                // Direct fetch from browser (Bypasses Server IP blocks)
+                const encoded = encodeURIComponent(`You are a helpful AI. User: ${prompt}\nAI:`);
+                const response = await fetch(`https://text.pollinations.ai/${encoded}`);
+                if (response.ok) {
+                    return await response.text();
+                }
+            } catch (err) {
+                console.error("Direct browser fetch failed:", err);
+            }
+            return "SYSTEM_CRITICAL: Unable to establish any connection. Please check your internet.";
+        };
 
         try {
-            // Send request as guest (no email needed on backend anymore)
+            // 1. Try Backend First
             const res = await api.post('/chat', {
                 message: userMsg,
-                email: "guest_bypass@hackgpt.local", // Bypass email
+                email: "guest_bypass@hackgpt.local",
                 model: selectedModel,
                 language: selectedLanguage
             });
 
+            // 2. Check for Soft Failures in Backend Response
+            if (res.data.response && (res.data.response.includes("CONNECTION_FAILED") || res.data.response.includes("Neural link dropped"))) {
+                throw new Error("Backend Soft Fail");
+            }
+
+            // Success via Backend
             updateModelHistory(selectedModel, { role: 'assistant', content: "" });
             setTypingMessage(res.data.response);
+
         } catch (err: any) {
-            console.error("Chat Error:", err);
-            updateModelHistory(selectedModel, { role: 'assistant', content: "SYSTEM_FAILURE: Neural link dropped. Retrying..." });
+            console.warn("Backend failed/blocked. Initiating Browser-Direct Override...", err);
+
+            // 3. FALLBACK: Browser Direct Fetch
+            const backupResponse = await tryDirectBrowserFetch(userMsg);
+
+            updateModelHistory(selectedModel, { role: 'assistant', content: "" });
+            setTypingMessage(backupResponse);
         } finally {
             setLoading(false);
         }
